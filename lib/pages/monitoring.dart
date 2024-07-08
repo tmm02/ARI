@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/pages/monitoring_enginedata.dart';
+import 'package:provider/provider.dart';
 import 'package:my_app/pages/monitoring_engine.dart';
 import 'package:my_app/pages/monitoring_fuelconsumption.dart';
 import 'package:my_app/pages/monitoring_rpm.dart';
 import 'package:my_app/pages/monitoring_temprature.dart';
 import 'package:my_app/widget/carditem.dart';
 import 'package:my_app/widget/engingstatuscard.dart';
+import 'package:my_app/provider.dart';
 
-class ReportPage extends StatelessWidget {
+class ReportPage extends StatefulWidget {
   const ReportPage({Key? key}) : super(key: key);
+
+  @override
+  _ReportPageState createState() => _ReportPageState();
+}
+
+class _ReportPageState extends State<ReportPage> {
+  @override
+  void initState() {
+    super.initState();
+    Provider.of<LogDataProvider>(context, listen: false).getlogdata();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,13 +35,12 @@ class ReportPage extends StatelessWidget {
           children: [
             Center(
               child: EngineStatusCard(
-                isOn: true, // Ganti dengan nilai dari API
+                isOn: true,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => MonitoringEnginePage(
-                        isOn: true,
                       ),
                     ),
                   );
@@ -37,56 +50,71 @@ class ReportPage extends StatelessWidget {
             SizedBox(
               height: 30,
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Today",
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.left,
-                ),
-                SizedBox(height: 10),
-                CardItem(
-                  title: 'Temperature',
-                  status: 'Normal',
-                  imagePath: '',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TemperaturePage(),
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(height: 20),
-                CardItem(
-                  title: 'Fuel Consumption',
-                  status: 'Low',
-                  imagePath: '',
-                  onTap: () {
-                    Navigator.push(
+            Text(
+              "Today",
+              style: Theme.of(context).textTheme.headlineMedium,
+              textAlign: TextAlign.left,
+            ),
+            SizedBox(height: 10),
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                children: [
+                  CardItem(
+                    title: 'Engine Data',
+                    icon: Icons.settings,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EngineDataPage(
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  CardItem(
+                    title: 'Exhaust Temperature',
+                    icon: Icons.thermostat_outlined,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TemperaturePage(),
+                        ),
+                      );
+                    },
+                  ),
+                  CardItem(
+                    title: 'Fuel Consumption',
+                    icon: Icons.local_gas_station,
+                    onTap: () {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => FuelConsumptionPage(),
-                        ));
-                  },
-                ),
-                SizedBox(height: 20),
-                CardItem(
-                  title: 'Rotation Per Minutes',
-                  status: 'High',
-                  imagePath: '',
-                  onTap: () {
-                    Navigator.push(
+                        ),
+                      );
+                    },
+                  ),
+                  CardItem(
+                    title: 'RPM & Throttle',
+                    icon: Icons.speed,
+                    onTap: () {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => RPMPage(),
-                        ));
-                  },
-                ),
-              ],
-            )
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            
           ],
         ),
       ),

@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
+import 'package:my_app/provider.dart';
 
 class TemperaturePage extends StatefulWidget {
   const TemperaturePage({Key? key}) : super(key: key);
@@ -15,6 +17,19 @@ class _TemperaturePageState extends State<TemperaturePage> {
   List<DataPoint> temperatureHistory = [
     DataPoint(0, 0)
   ]; // Sejarah suhu, default dimulai dari 0
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<LogDataProvider>(context, listen: false).getlogdata();
+    });
+  }
+
+  double extractSeconds(String terminalTime) {
+    final dateTime = DateTime.parse(terminalTime.replaceFirst(' ', 'T'));
+    return dateTime.second.toDouble();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,66 +57,91 @@ class _TemperaturePageState extends State<TemperaturePage> {
               child: Container(
                 width: 200,
                 height: 200,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SfRadialGauge(
-                      axes: <RadialAxis>[
-                        RadialAxis(
-                          minimum: 0,
-                          maximum: 300,
-                          showLabels: true, // Menampilkan label
-                          showTicks: true, // Menampilkan tick
-                          useRangeColorForAxis:
-                              true, // Menggunakan warna dari rentang untuk sumbu
-                          ranges: <GaugeRange>[
-                            GaugeRange(
-                              startValue: 0,
-                              endValue: celsius,
-                              color: _getTemperatureColor(celsius),
-                              startWidth: 10,
-                              endWidth: 10,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '$celsius °C',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ],
+                child: Consumer<LogDataProvider>(
+                  builder: (context, logDataProvider, child) {
+                    if (logDataProvider.logData.isEmpty) {
+                      return Center(child: CircularProgressIndicator());
+                    } else {
+                      double latestTemperature = double.parse(
+                          logDataProvider.logData.last['temperature']);
+
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SfRadialGauge(
+                            axes: <RadialAxis>[
+                              RadialAxis(
+                                minimum: 0,
+                                maximum: 300,
+                                showLabels: true, // Menampilkan label
+                                showTicks: true, // Menampilkan tick
+                                useRangeColorForAxis:
+                                    true, // Menggunakan warna dari rentang untuk sumbu
+                                ranges: <GaugeRange>[
+                                  GaugeRange(
+                                    startValue: 0,
+                                    endValue: latestTemperature,
+                                    color: _getTemperatureColor(latestTemperature),
+                                    startWidth: 10,
+                                    endWidth: 10,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '$latestTemperature °C',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                        ],
+                      );
+                    }
+                  },
                 ),
               ),
             ),
             SizedBox(height: 20),
             Text(
-              "Temprature Data",
+              "Temperature Data",
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.left,
             ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: SfCartesianChart(
-                  primaryXAxis: NumericAxis(
-                    edgeLabelPlacement: EdgeLabelPlacement.shift,
-                    title: AxisTitle(text: 'Waktu (hari)'),
-                  ),
-                  primaryYAxis: NumericAxis(
-                    maximum: 320,
-                    title: AxisTitle(text: 'Temperature (°C)'),
-                  ),
-                  series: <CartesianSeries>[
-                    SplineSeries<DataPoint, double>(
-                        dataSource: temperatureHistory,
-                        xValueMapper: (DataPoint data, _) => data.x,
-                        yValueMapper: (DataPoint data, _) => data.y,
-                        markerSettings: MarkerSettings(isVisible: true),
-                        dataLabelSettings: DataLabelSettings(
-                          isVisible: true,
-                        )),
-                  ],
+                child: Consumer<LogDataProvider>(
+                  builder: (context, logDataProvider, child) {
+                    if (logDataProvider.logData.isEmpty) {
+                      return Center(child: CircularProgressIndicator());
+                    } else {
+                      List<DataPoint> temperatureHistory = logDataProvider.logData
+                          .map((entry) => DataPoint(
+                              extractSeconds(entry['_terminalTime']),
+                              double.parse(entry['temperature'])))
+                          .toList();
+
+                      return SfCartesianChart(
+                        primaryXAxis: NumericAxis(
+                          edgeLabelPlacement: EdgeLabelPlacement.shift,
+                          title: AxisTitle(text: 'Time (seconds)'),
+                        ),
+                        primaryYAxis: NumericAxis(
+                          title: AxisTitle(text: 'Temperature (°C)'),
+                        ),
+                        series: <CartesianSeries>[
+                          SplineSeries<DataPoint, double>(
+                            dataSource: temperatureHistory,
+                            xValueMapper: (DataPoint data, _) => data.x,
+                            yValueMapper: (DataPoint data, _) => data.y,
+                            markerSettings: MarkerSettings(isVisible: true),
+                            dataLabelSettings: DataLabelSettings(
+                              isVisible: true,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
                 ),
               ),
             ),
@@ -111,13 +151,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Misalnya, di sini Anda dapat mengubah nilai suhu secara dinamis
-          setState(() {
-            // Contoh: nilai suhu diperbarui secara acak antara 0 hingga 300 derajat Celsius
-            celsius = Random().nextInt(301).toDouble();
-            temperatureHistory.add(DataPoint(
-                temperatureHistory.length.toDouble(),
-                celsius)); // Tambahkan nilai suhu ke dalam sejarah
-          });
+          Provider.of<LogDataProvider>(context, listen: false).randomizeData();
         },
         child: Icon(Icons.refresh),
       ),
