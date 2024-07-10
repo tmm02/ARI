@@ -28,7 +28,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
 
   double extractSeconds(String terminalTime) {
     final dateTime = DateTime.parse(terminalTime.replaceFirst(' ', 'T'));
-    return dateTime.second.toDouble();
+    return dateTime.millisecondsSinceEpoch.toDouble() / Duration.millisecondsPerMinute; // Convert to minutes
   }
 
   @override
@@ -72,7 +72,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
                             axes: <RadialAxis>[
                               RadialAxis(
                                 minimum: 0,
-                                maximum: 300,
+                                maximum: 400,
                                 showLabels: true, // Menampilkan label
                                 showTicks: true, // Menampilkan tick
                                 useRangeColorForAxis:
@@ -150,8 +150,10 @@ class _TemperaturePageState extends State<TemperaturePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Misalnya, di sini Anda dapat mengubah nilai suhu secara dinamis
-          Provider.of<LogDataProvider>(context, listen: false).randomizeData();
+          setState(() {
+            Provider.of<LogDataProvider>(context, listen: false).getlogdata();
+          });
+          
         },
         child: Icon(Icons.refresh),
       ),

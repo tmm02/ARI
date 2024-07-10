@@ -15,7 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   // Daftar akun
   final List<Map<String, String>> _accounts = [
     {'username': 'ari', 'password': '123'},
-
+    {'username': 'dmom', 'password': 'dmom123'},
   ];
 
   void _login() {

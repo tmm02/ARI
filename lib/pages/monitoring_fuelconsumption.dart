@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
+import 'package:provider/provider.dart';
+import 'package:my_app/provider.dart';
 
 class FuelConsumptionPage extends StatefulWidget {
   const FuelConsumptionPage({Key? key}) : super(key: key);
@@ -13,6 +15,35 @@ class FuelConsumptionPage extends StatefulWidget {
 class _FuelConsumptionPageState extends State<FuelConsumptionPage> {
   double fuel = 0;
   List<DataPoint> FuelConsumptionHistory = [DataPoint(0, 0)];
+
+  double extractTimeInSeconds(String terminalTime) {
+    final dateTime = DateTime.parse(terminalTime.replaceFirst(' ', 'T'));
+    return dateTime.hour * 3600 + dateTime.minute * 60 + dateTime.second.toDouble();
+  }
+
+  void _refreshData() {
+    final logDataProvider = Provider.of<LogDataProvider>(context, listen: false);
+    logDataProvider.getlogdata().then((_) {
+      setState(() {
+        FuelConsumptionHistory = logDataProvider.logData
+            .map((entry) => DataPoint(
+                extractTimeInSeconds(entry['_terminalTime']),
+                double.parse(entry['fuel'])))
+            .toList();
+        FuelConsumptionHistory.sort((a, b) => a.x.compareTo(b.x));
+
+        if (FuelConsumptionHistory.isNotEmpty) {
+          fuel = FuelConsumptionHistory.last.y;
+        }
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +59,7 @@ class _FuelConsumptionPageState extends State<FuelConsumptionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('FuelConsumption'),
+        title: Text('Fuel Consumption'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(15.0),
@@ -47,11 +78,10 @@ class _FuelConsumptionPageState extends State<FuelConsumptionPage> {
                       axes: <RadialAxis>[
                         RadialAxis(
                           minimum: 0,
-                          maximum: 150,
-                          showLabels: true, // Menampilkan label
-                          showTicks: true, // Menampilkan tick
-                          useRangeColorForAxis:
-                              true, // Menggunakan warna dari rentang untuk sumbu
+                          maximum: 21,
+                          showLabels: true,
+                          showTicks: true,
+                          useRangeColorForAxis: true,
                           ranges: <GaugeRange>[
                             GaugeRange(
                               startValue: 0,
@@ -73,7 +103,7 @@ class _FuelConsumptionPageState extends State<FuelConsumptionPage> {
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
                         Text(
-                          'l/hour',
+                          'ml/minutes',
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ],
@@ -84,7 +114,7 @@ class _FuelConsumptionPageState extends State<FuelConsumptionPage> {
             ),
             SizedBox(height: 20),
             Text(
-              "SFOC Data",
+              "Fuel Consumption",
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.left,
             ),
@@ -94,21 +124,22 @@ class _FuelConsumptionPageState extends State<FuelConsumptionPage> {
                 child: SfCartesianChart(
                   primaryXAxis: NumericAxis(
                     edgeLabelPlacement: EdgeLabelPlacement.shift,
-                    title: AxisTitle(text: 'Waktu (hari)'),
+                    title: AxisTitle(text: 'Time (second)'),
                   ),
                   primaryYAxis: NumericAxis(
-                    maximum: 170,
-                    title: AxisTitle(text: 'Fuel Consumption (l/hour)'),
+                    maximum: 21,
+                    title: AxisTitle(text: 'Fuel Consumption (ml/min)'),
                   ),
                   series: <CartesianSeries>[
                     SplineSeries<DataPoint, double>(
-                        dataSource: FuelConsumptionHistory,
-                        xValueMapper: (DataPoint data, _) => data.x,
-                        yValueMapper: (DataPoint data, _) => data.y,
-                        markerSettings: MarkerSettings(isVisible: true),
-                        dataLabelSettings: DataLabelSettings(
-                          isVisible: true,
-                        )),
+                      dataSource: FuelConsumptionHistory,
+                      xValueMapper: (DataPoint data, _) => data.x,
+                      yValueMapper: (DataPoint data, _) => data.y,
+                      markerSettings: MarkerSettings(isVisible: true),
+                      dataLabelSettings: DataLabelSettings(
+                        isVisible: true,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -117,16 +148,7 @@ class _FuelConsumptionPageState extends State<FuelConsumptionPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Misalnya, di sini Anda dapat mengubah nilai suhu secara dinamis
-          setState(() {
-            // Contoh: nilai suhu diperbarui secara acak antara 0 hingga 300 derajat fuel
-            fuel = Random().nextInt(150).toDouble();
-            FuelConsumptionHistory.add(DataPoint(
-                FuelConsumptionHistory.length.toDouble(),
-                fuel)); // Tambahkan nilai suhu ke dalam sejarah
-          });
-        },
+        onPressed: _refreshData,
         child: Icon(Icons.refresh),
       ),
     );

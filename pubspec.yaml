@@ -39,6 +39,7 @@ dependencies:
   syncfusion_flutter_gauges: ^25.1.42
   syncfusion_flutter_charts: ^25.1.42+1
   connectivity_plus: ^2.0.2
+  mqtt_client: ^9.6.0
 
 dev_dependencies:
   flutter_test:

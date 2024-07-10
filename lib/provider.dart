@@ -29,26 +29,4 @@ class LogDataProvider extends ChangeNotifier {
       print('Error occurred: $error');
     }
   }
-  void randomizeData() {
-    final Random random = Random();
-    final now = DateTime.now();
-
-    logData = List.generate(
-      10,
-      (index) {
-        final seconds = now.add(Duration(seconds: index)).toIso8601String().replaceFirst('T', ' ');
-        return {
-          '_id': index.toString(),
-          '_dbTime': now.toIso8601String(),
-          '_terminalTime': seconds,
-          '_groupName': 'Online',
-          'temperature': random.nextInt(100).toString(),
-          'fuel': random.nextInt(100).toString(),
-          'rpm': random.nextInt(100).toString(),
-          'power': random.nextInt(100).toString(),
-        };
-      },
-    );
-    notifyListeners();
-  }
 }

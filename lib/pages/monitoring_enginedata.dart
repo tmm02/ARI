@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -20,15 +19,21 @@ class _EngineDataPageState extends State<EngineDataPage> {
     });
   }
 
-  double extractSeconds(String terminalTime) {
+  double extractTimeInSeconds(String terminalTime) {
     final dateTime = DateTime.parse(terminalTime.replaceFirst(' ', 'T'));
-    return dateTime.second.toDouble();
+    return dateTime.hour * 3600 + dateTime.minute * 60 + dateTime.second.toDouble();
   }
 
   double calculateAverage(List<DataPoint> data) {
     if (data.isEmpty) return 0.0;
     double sum = data.fold(0.0, (previousValue, element) => previousValue + element.y);
     return sum / data.length;
+  }
+
+  void _refreshData() {
+    setState(() {
+      Provider.of<LogDataProvider>(context, listen: false).getlogdata();
+    });
   }
 
   @override
@@ -46,24 +51,30 @@ class _EngineDataPageState extends State<EngineDataPage> {
             } else {
               List<DataPoint> temperatureData = logDataProvider.logData
                   .map((entry) => DataPoint(
-                      extractSeconds(entry['_terminalTime']),
+                      extractTimeInSeconds(entry['_terminalTime']),
                       double.parse(entry['temperature'])))
                   .toList();
               List<DataPoint> fuelData = logDataProvider.logData
                   .map((entry) => DataPoint(
-                      extractSeconds(entry['_terminalTime']),
+                      extractTimeInSeconds(entry['_terminalTime']),
                       double.parse(entry['fuel'])))
                   .toList();
               List<DataPoint> rpmData = logDataProvider.logData
                   .map((entry) => DataPoint(
-                      extractSeconds(entry['_terminalTime']),
+                      extractTimeInSeconds(entry['_terminalTime']),
                       double.parse(entry['rpm'])))
                   .toList();
               List<DataPoint> powerData = logDataProvider.logData
                   .map((entry) => DataPoint(
-                      extractSeconds(entry['_terminalTime']),
+                      extractTimeInSeconds(entry['_terminalTime']),
                       double.parse(entry['power'])))
                   .toList();
+
+              // Sort data points by time
+              temperatureData.sort((a, b) => a.x.compareTo(b.x));
+              fuelData.sort((a, b) => a.x.compareTo(b.x));
+              rpmData.sort((a, b) => a.x.compareTo(b.x));
+              powerData.sort((a, b) => a.x.compareTo(b.x));
 
               double avgTemperature = calculateAverage(temperatureData);
               double avgFuel = calculateAverage(fuelData);
@@ -81,9 +92,7 @@ class _EngineDataPageState extends State<EngineDataPage> {
                       textAlign: TextAlign.left,
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        Provider.of<LogDataProvider>(context, listen: false).randomizeData();
-                      },
+                      onPressed: _refreshData,
                       child: Text('Refresh Data'),
                     ),
                     Text(
@@ -101,7 +110,7 @@ class _EngineDataPageState extends State<EngineDataPage> {
                       ),
                       series: <CartesianSeries>[
                         SplineSeries<DataPoint, double>(
-                          name: 'Temperature',
+                          name: 'Temperature Exhaust',
                           dataSource: temperatureData,
                           xValueMapper: (DataPoint data, _) => data.x,
                           yValueMapper: (DataPoint data, _) => data.y,
@@ -110,7 +119,7 @@ class _EngineDataPageState extends State<EngineDataPage> {
                           color: Colors.red,
                         ),
                         SplineSeries<DataPoint, double>(
-                          name: 'Fuel',
+                          name: 'Fuel Consumption',
                           dataSource: fuelData,
                           xValueMapper: (DataPoint data, _) => data.x,
                           yValueMapper: (DataPoint data, _) => data.y,
@@ -119,7 +128,7 @@ class _EngineDataPageState extends State<EngineDataPage> {
                           color: Colors.green,
                         ),
                         SplineSeries<DataPoint, double>(
-                          name: 'RPM',
+                          name: 'Rotation Per Minutes',
                           dataSource: rpmData,
                           xValueMapper: (DataPoint data, _) => data.x,
                           yValueMapper: (DataPoint data, _) => data.y,
@@ -128,7 +137,7 @@ class _EngineDataPageState extends State<EngineDataPage> {
                           color: Colors.blue,
                         ),
                         SplineSeries<DataPoint, double>(
-                          name: 'Power',
+                          name: 'Load',
                           dataSource: powerData,
                           xValueMapper: (DataPoint data, _) => data.x,
                           yValueMapper: (DataPoint data, _) => data.y,
